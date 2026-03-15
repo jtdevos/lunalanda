@@ -218,7 +218,7 @@ function spawnExplosion(cx, cy) {
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       life: 1,
-      decay: 0.018 + Math.random() * 0.025,
+      decay: 0.011 + Math.random() * 0.016,
       len: 5 + Math.random() * 10,
       color,
     });
@@ -247,7 +247,7 @@ function spawnExplosion(cx, cy) {
       size,
       verts,
       life: 1,
-      decay: 0.010 + Math.random() * 0.015,
+      decay: 0.006 + Math.random() * 0.010,
     });
   }
 
@@ -262,7 +262,7 @@ function spawnExplosion(cx, cy) {
       vy: Math.sin(angle) * speed,
       r: 1 + Math.random() * 2.5,
       life: 1,
-      decay: 0.022 + Math.random() * 0.03,
+      decay: 0.014 + Math.random() * 0.018,
       color: (() => { const r = Math.random(); return r < 0.45 ? '#0f0' : r < 0.70 ? '#fff' : '#ff0'; })(),
     });
   }
@@ -273,7 +273,7 @@ function updateParticles(dt) {
   for (const p of particles) {
     p.x += p.vx * dt;
     p.y += p.vy * dt;
-    p.vy += GRAVITY * 0.6 * dt;
+    p.vy += GRAVITY * 1.4 * dt;
     if (p.type === 'debris') p.rot += p.spin * dt;
     p.life -= p.decay * dt;
   }
