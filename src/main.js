@@ -206,15 +206,12 @@ function drawGrid() {
 let particles = [];
 
 function spawnExplosion(cx, cy) {
-  // Shockwave rings
-  particles.push({ type: 'ring', x: cx, y: cy, r: 4, life: 1, decay: 0.028, color: '#fff' });
-  particles.push({ type: 'ring', x: cx, y: cy, r: 2, life: 1, decay: 0.018, color: '#0f0' });
-
   // Sparks — fast thin streaks
   for (let i = 0; i < 83; i++) {
     const angle = Math.random() * Math.PI * 2;
     const speed = 1.5 + Math.random() * 7;
-    const green = Math.random() < 0.55;
+    const r = Math.random();
+    const color = r < 0.40 ? '#0f0' : r < 0.65 ? '#fff' : '#ff0';
     particles.push({
       type: 'spark',
       x: cx, y: cy,
@@ -223,7 +220,7 @@ function spawnExplosion(cx, cy) {
       life: 1,
       decay: 0.018 + Math.random() * 0.025,
       len: 5 + Math.random() * 10,
-      color: green ? '#0f0' : '#fff',
+      color,
     });
   }
 
@@ -266,7 +263,7 @@ function spawnExplosion(cx, cy) {
       r: 1 + Math.random() * 2.5,
       life: 1,
       decay: 0.022 + Math.random() * 0.03,
-      color: Math.random() < 0.6 ? '#0f0' : '#fff',
+      color: (() => { const r = Math.random(); return r < 0.45 ? '#0f0' : r < 0.70 ? '#fff' : '#ff0'; })(),
     });
   }
 }
@@ -274,15 +271,10 @@ function spawnExplosion(cx, cy) {
 function updateParticles(dt) {
   // Physics pass
   for (const p of particles) {
-    if (p.type === 'ring') {
-      p.r += 3.5 * dt;
-    } else {
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy += GRAVITY * 0.6 * dt;
-      if (p.type === 'debris') p.rot += p.spin * dt;
-    }
-    // (dot has no extra state)
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += GRAVITY * 0.6 * dt;
+    if (p.type === 'debris') p.rot += p.spin * dt;
     p.life -= p.decay * dt;
   }
   particles = particles.filter(p => p.life > 0);
@@ -290,15 +282,7 @@ function updateParticles(dt) {
   // Draw pass
   for (const p of particles) {
     const a = Math.max(0, p.life);
-    if (p.type === 'ring') {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.strokeStyle = p.color === '#fff'
-        ? `rgba(255,255,255,${a})`
-        : `rgba(0,255,0,${a})`;
-      ctx.lineWidth = 0.5 * a;
-      ctx.stroke();
-    } else if (p.type === 'spark') {
+    if (p.type === 'spark') {
       // Draw as a trailing line in the direction of travel
       const speed = Math.hypot(p.vx, p.vy) || 1;
       const tx = (p.vx / speed) * p.len * a;
@@ -308,7 +292,9 @@ function updateParticles(dt) {
       ctx.lineTo(p.x - tx, p.y - ty);
       ctx.strokeStyle = p.color === '#fff'
         ? `rgba(255,255,255,${a})`
-        : `rgba(0,255,0,${a * 0.9})`;
+        : p.color === '#ff0'
+          ? `rgba(255,180,0,${a})`
+          : `rgba(0,255,0,${a * 0.9})`;
       ctx.lineWidth = 1;
       ctx.stroke();
     } else if (p.type === 'debris') {
@@ -337,7 +323,9 @@ function updateParticles(dt) {
       ctx.arc(p.x, p.y, Math.max(0, p.r * a), 0, Math.PI * 2);
       ctx.fillStyle = p.color === '#fff'
         ? `rgba(255,255,255,${a})`
-        : `rgba(0,255,0,${a})`;
+        : p.color === '#ff0'
+          ? `rgba(255,180,0,${a})`
+          : `rgba(0,255,0,${a})`;
       ctx.fill();
     }
   }
