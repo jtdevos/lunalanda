@@ -296,7 +296,7 @@ function updateParticles(dt) {
       ctx.strokeStyle = p.color === '#fff'
         ? `rgba(255,255,255,${a})`
         : `rgba(0,255,0,${a})`;
-      ctx.lineWidth = 1.5 * a;
+      ctx.lineWidth = 0.5 * a;
       ctx.stroke();
     } else if (p.type === 'spark') {
       // Draw as a trailing line in the direction of travel
