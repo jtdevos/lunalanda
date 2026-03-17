@@ -12,15 +12,7 @@ npm run preview  # Preview production build
 
 ## Project Structure
 
-Lunalanda is a Lunar Lander-style browser game built with vanilla JS + Canvas 2D, bundled by Vite. There are three parallel variants (A/B/C), each with its own HTML entry point and JS file:
-
-| File | Entry | Variant |
-|------|-------|---------|
-| `index-a.html` → `src/main-a.js` | `/` (default dev) | Smooth tracking camera |
-| `index-b.html` → `src/main-b.js` | `/index-b.html` | Spring/damper camera + two-layer parallax stars |
-| `index-c.html` → `src/main-c.js` | `/index-c.html` | Spring camera + dynamic zoom based on altitude |
-
-The variants share identical game logic and differ only in camera and rendering behavior. When adding gameplay features, apply changes to all three variants.
+Lunalanda is a Lunar Lander-style browser game built with vanilla JS + Canvas 2D, bundled by Vite. Entry point is `index.html` → `src/main.js`.
 
 ## Architecture
 
@@ -33,7 +25,7 @@ Each `src/main-*.js` is a self-contained module (no imports). Everything lives a
 - **Lander** — object `{ x, y, vx, vy, angle, fuel, thrustOn }`. Feet at local `(±18, 15)` used for collision.
 - **Collision** — `checkLanding()` transforms feet to world space, checks terrain contact, then checks pad/speed/angle for win vs crash.
 - **Particles** — `spawnExplosion()` generates three particle types: `spark` (trailing streaks), `debris` (rotating wireframe polygons), `dot` (filled circles). Updated and drawn inside `draw()` when `state === 'dead'`.
-- **Camera** — world rendered with `ctx.translate(0, H/2 - cam.y)`. Stars and grid are screen-space (drawn before translate). Variant C adds `zoom` applied via `ctx.scale`.
+- **Camera** — world rendered with `ctx.translate/scale` centered on screen. Stars and grid are screen-space (drawn before transform). `zoom` springs between ~0.78–1.22 based on altitude.
 - **HUD** — DOM elements updated via `updateHUD()`; color classes `warn`/`danger` applied based on thresholds.
 - **Spawn protection** — `spawnProtect` counter (~90 frames) causes lander to blink and skips collision checks after spawn.
 

@@ -28,6 +28,42 @@ let lives = 3;
 
 let lander, terrain;
 let keys = {};
+let wasThrusting = false;
+
+// ── Camera + Zoom ────────────────────────────────────────────
+let cam = { y: H / 2, vy: 0 };
+let zoom = 1.0;
+let zoomVel = 0;
+
+function getTargetZoom() {
+  if (!lander || !terrain) return 1;
+  const altitude = Math.max(0, terrainYAt(lander.x) - lander.y);
+  const t = Math.min(altitude / (H * 0.75), 1); // 0 = on ground, 1 = high up
+  return 1.22 - t * 0.44; // 1.22 zoomed in at ground, 0.78 zoomed out when high
+}
+
+function updateCamera(dt) {
+  // Zoom spring
+  zoomVel += (getTargetZoom() - zoom) * 0.006 * dt;
+  zoomVel *= Math.pow(0.88, dt);
+  zoom += zoomVel * dt;
+  zoom = Math.max(0.72, Math.min(1.3, zoom));
+
+  if (!lander) return;
+  // Camera target: keep lander at ~38% from top of screen
+  const target = lander.y + H * 0.12 / zoom;
+  cam.vy += (target - cam.y) * 0.010 * dt;
+  cam.vy *= Math.pow(0.84, dt);
+  cam.y += cam.vy * dt;
+
+  if (terrain) {
+    // Terrain top must stay on screen (at most 92% from top of screen)
+    const maxCamY = terrain.minTerrainY + H * 0.49 / zoom;
+    const minCamY = -H * 0.35;
+    cam.y = Math.max(minCamY, Math.min(maxCamY, cam.y));
+    if (cam.y === maxCamY || cam.y === minCamY) cam.vy = 0;
+  }
+}
 
 // ── Input ────────────────────────────────────────────────────
 window.addEventListener('keydown', e => {
@@ -45,16 +81,22 @@ window.addEventListener('keyup', e => { keys[e.code] = false; });
 
 // ── Terrain generation ───────────────────────────────────────
 function generateTerrain() {
-  const segments = 20;
-  const segW = W / segments;
-  // Pad is 2 segments wide; keep it away from edges
-  const padSeg = 4 + Math.floor(Math.random() * (segments - 10));
+  // At minimum zoom (0.72), visible world width = W/0.72 ≈ 1333px centered at W/2.
+  // Add margin of ~400px each side so edges are never visible.
+  const margin = Math.round(W * 0.42);
+  const worldLeft = -margin;
+  const worldRight = W + margin;
+  const worldW = worldRight - worldLeft;
+  const segments = 28;
+  const segW = worldW / segments;
+  // Pad is 2 segments wide; keep it in the central zone (segments 8–18)
+  const padSeg = 8 + Math.floor(Math.random() * 10);
   const padY = Math.round(H * 0.58 + Math.random() * (H * 0.18));
 
   const points = [];
   let y = H * 0.37 + Math.random() * (H * 0.28);
   for (let i = 0; i <= segments; i++) {
-    const x = i * segW;
+    const x = worldLeft + i * segW;
     if (i === padSeg || i === padSeg + 1 || i === padSeg + 2) {
       points.push({ x, y: padY });
     } else {
@@ -64,12 +106,14 @@ function generateTerrain() {
     }
   }
 
-  return { points, segW, padSeg, padY };
+  const minTerrainY = Math.min(...points.map(p => p.y));
+  return { points, segW, padSeg, padY, minTerrainY };
 }
 
 function terrainYAt(x) {
   const { points, segW } = terrain;
-  const idx = Math.floor(x / segW);
+  const startX = points[0].x;
+  const idx = Math.floor((x - startX) / segW);
   if (idx < 0) return points[0].y;
   if (idx >= points.length - 1) return points[points.length - 1].y;
   const t = (x - points[idx].x) / segW;
@@ -136,7 +180,7 @@ function drawTerrain() {
   ctx.beginPath();
   ctx.moveTo(points[0].x, points[0].y);
   for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
-  ctx.lineTo(W, H); ctx.lineTo(0, H);
+  ctx.lineTo(W, H * 10); ctx.lineTo(0, H * 10);
   ctx.closePath();
   ctx.fillStyle = '#010801';
   ctx.fill();
@@ -173,20 +217,45 @@ function drawTerrain() {
   }
 }
 
-// ── Stars ────────────────────────────────────────────────────
-const STARS = Array.from({ length: 120 }, () => ({
+// ── Stars — THREE parallax layers ────────────────────────────
+// Layer 1: deep background, barely moves
+const STARS_L1 = Array.from({ length: 100 }, () => ({
   x: Math.random() * W,
-  y: Math.random() * (H * 0.7),
-  r: Math.random() * 1.2,
-  b: 0.3 + Math.random() * 0.7,
+  y: -100 + Math.random() * (H + 200),
+  r: 0.3 + Math.random() * 0.6,
+  b: 0.15 + Math.random() * 0.4,
+}));
+
+// Layer 2: mid distance
+const STARS_L2 = Array.from({ length: 60 }, () => ({
+  x: Math.random() * W,
+  y: -100 + Math.random() * (H + 200),
+  r: 0.6 + Math.random() * 1.0,
+  b: 0.3 + Math.random() * 0.5,
+}));
+
+// Layer 3: near background, moves most, also subtly scales with zoom
+const STARS_L3 = Array.from({ length: 30 }, () => ({
+  x: Math.random() * W,
+  y: -100 + Math.random() * (H + 200),
+  r: 1.0 + Math.random() * 1.5,
+  b: 0.5 + Math.random() * 0.5,
 }));
 
 function drawStars() {
-  for (const s of STARS) {
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255,255,255,${s.b})`;
-    ctx.fill();
+  const offset1 = (H / 2 - cam.y) * 0.03;
+  const offset2 = (H / 2 - cam.y) * 0.12;
+  const offset3 = (H / 2 - cam.y) * 0.32;
+
+  for (const [layer, offset] of [[STARS_L1, offset1], [STARS_L2, offset2], [STARS_L3, offset3]]) {
+    for (const s of layer) {
+      const sy = s.y + offset;
+      if (sy < -4 || sy > H + 4) continue;
+      ctx.beginPath();
+      ctx.arc(s.x, sy, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${s.b})`;
+      ctx.fill();
+    }
   }
 }
 
@@ -350,6 +419,72 @@ function updateHUD() {
   hudScore.textContent = score;
 }
 
+// ── Audio ─────────────────────────────────────────────────────
+let audioCtx = null;
+let thrusterSrc = null;
+let thrusterGain = null;
+
+function getAudio() {
+  if (!audioCtx) audioCtx = new AudioContext();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function startThruster() {
+  if (thrusterSrc) return;
+  const ac = getAudio();
+  const buf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  thrusterSrc = ac.createBufferSource();
+  thrusterSrc.buffer = buf;
+  thrusterSrc.loop = true;
+  const filter = ac.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 140;
+  filter.Q.value = 0.7;
+  thrusterGain = ac.createGain();
+  thrusterGain.gain.setValueAtTime(0, ac.currentTime);
+  thrusterGain.gain.linearRampToValueAtTime(0.18, ac.currentTime + 0.08);
+  thrusterSrc.connect(filter);
+  filter.connect(thrusterGain);
+  thrusterGain.connect(ac.destination);
+  thrusterSrc.start();
+}
+
+function stopThruster() {
+  if (!thrusterSrc) return;
+  const ac = getAudio();
+  const g = thrusterGain, s = thrusterSrc;
+  thrusterSrc = null;
+  thrusterGain = null;
+  g.gain.setValueAtTime(g.gain.value, ac.currentTime);
+  g.gain.linearRampToValueAtTime(0, ac.currentTime + 0.12);
+  s.stop(ac.currentTime + 0.12);
+}
+
+function playExplosion() {
+  const ac = getAudio();
+  const dur = 1.8;
+  const buf = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  const filter = ac.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(600, ac.currentTime);
+  filter.frequency.exponentialRampToValueAtTime(80, ac.currentTime + dur);
+  const gain = ac.createGain();
+  gain.gain.setValueAtTime(0.7, ac.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
+  src.connect(filter);
+  filter.connect(gain);
+  gain.connect(ac.destination);
+  src.start();
+  src.stop(ac.currentTime + dur);
+}
+
 // ── Collision ────────────────────────────────────────────────
 function localToWorld(lx, ly, cx, cy, rad) {
   return {
@@ -389,6 +524,7 @@ function checkLanding() {
 
 function win(speed) {
   state = 'won';
+  stopThruster();
   const pts = Math.round((MAX_SAFE_SPEED - speed) / MAX_SAFE_SPEED * 500 + lander.fuel * 3);
   score += pts;
   overlayTitle.textContent = `LANDED! +${pts} PTS`;
@@ -400,6 +536,8 @@ function win(speed) {
 
 function crash() {
   state = 'dead';
+  stopThruster();
+  playExplosion();
   spawnExplosion(lander.x, lander.y);
   lives -= 1;
   if (lives <= 0) {
@@ -446,8 +584,13 @@ function spawnLander() {
 function startNewGame() {
   score = 0;
   lives = 3;
+  wasThrusting = false;
   terrain = generateTerrain();
   spawnLander();
+  cam.y = lander.y + H * 0.12;
+  cam.vy = 0;
+  zoom = 1.0;
+  zoomVel = 0;
   particles = [];
   state = 'playing';
   overlay.classList.add('hidden');
@@ -456,7 +599,12 @@ function startNewGame() {
 
 function respawn() {
   // same terrain, new lander
+  wasThrusting = false;
   spawnLander();
+  cam.y = lander.y + H * 0.12;
+  cam.vy = 0;
+  zoom = 1.0;
+  zoomVel = 0;
   particles = [];
   state = 'playing';
   overlay.classList.add('hidden');
@@ -464,8 +612,13 @@ function respawn() {
 }
 
 function nextRound() {
+  wasThrusting = false;
   terrain = generateTerrain();
   spawnLander();
+  cam.y = lander.y + H * 0.12;
+  cam.vy = 0;
+  zoom = 1.0;
+  zoomVel = 0;
   particles = [];
   state = 'playing';
   overlay.classList.add('hidden');
@@ -474,13 +627,19 @@ function nextRound() {
 
 // ── Loop ─────────────────────────────────────────────────────
 function update(dt) {
-  if (state !== 'playing') return;
+  if (state !== 'playing') {
+    updateCamera(dt);
+    return;
+  }
 
   if (keys['ArrowLeft'])  lander.angle -= ROTATION_SPEED * dt;
   if (keys['ArrowRight']) lander.angle += ROTATION_SPEED * dt;
 
   const thrusting = keys['ArrowUp'] && lander.fuel > 0;
   lander.thrustOn = thrusting;
+  if (thrusting && !wasThrusting) startThruster();
+  else if (!thrusting && wasThrusting) stopThruster();
+  wasThrusting = thrusting;
   if (thrusting) {
     const rad = (lander.angle * Math.PI) / 180;
     lander.vx += Math.sin(rad) * THRUST_POWER * dt;
@@ -504,6 +663,8 @@ function update(dt) {
     checkLanding();
   }
   updateHUD();
+
+  updateCamera(dt);
 }
 
 function draw(dt) {
@@ -513,23 +674,23 @@ function draw(dt) {
 
   drawGrid();
   drawStars();
+
+  // Zoom around screen center, then pan to camera world position
+  ctx.save();
+  ctx.translate(W / 2, H / 2);
+  ctx.scale(zoom, zoom);
+  ctx.translate(-W / 2, -cam.y);
+
   if (terrain) drawTerrain();
 
   if (state === 'playing' && lander) {
-    // Blink during spawn protection to signal the player where the ship is
     const blinkOn = spawnProtect <= 0 || Math.floor(spawnProtect / 6) % 2 === 0;
-    if (blinkOn) {
-      drawLander(lander.x, lander.y, lander.angle, lander.thrustOn, lander.fuel);
-    }
+    if (blinkOn) drawLander(lander.x, lander.y, lander.angle, lander.thrustOn, lander.fuel);
   }
+  if (state === 'dead') updateParticles(dt);
+  if (state === 'won' && lander) drawLander(lander.x, lander.y, lander.angle, false, lander.fuel);
 
-  if (state === 'dead') {
-    updateParticles(dt);
-  }
-
-  if (state === 'won' && lander) {
-    drawLander(lander.x, lander.y, lander.angle, false, lander.fuel);
-  }
+  ctx.restore();
 }
 
 let lastTimestamp = null;
