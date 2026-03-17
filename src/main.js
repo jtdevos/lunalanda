@@ -120,18 +120,29 @@ function terrainYAt(x) {
   return points[idx].y + t * (points[idx + 1].y - points[idx].y);
 }
 
-// ── Lander drawing (scaled to ~70% of original) ───────────────
-// Feet tips are at local (±18, 15) — used in checkLanding too
+// ── Lander drawing — USS Palomino-inspired ────────────────────
+// Feet tips are at local (±24, 15) — used in checkLanding too
 const LANDER_SHAPE = [
-  { type: 'poly', pts: [[-8, 7], [8, 7], [6, -7], [-6, -7]] },
-  { type: 'line', p1: [-8, 7],  p2: [-14, 15] },
-  { type: 'line', p1: [-14, 15], p2: [-18, 15] },
-  { type: 'line', p1: [8, 7],   p2: [14, 15] },
-  { type: 'line', p1: [14, 15], p2: [18, 15] },
-  { type: 'line', p1: [-4, 7],  p2: [-4, 10] },
-  { type: 'line', p1: [4, 7],   p2: [4, 10] },
-  { type: 'line', p1: [-4, 10], p2: [4, 10] },
-  { type: 'circle', cx: 0, cy: -1, r: 4 },
+  // Cylindrical hull body
+  { type: 'poly', pts: [[-18, -11], [18, -11], [18, 9], [-18, 9]] },
+  // Top elliptical cap (sells the cylinder)
+  { type: 'ellipse', cx: 0, cy: -11, rx: 18, ry: 4 },
+  // Antenna — short, straight, from hull top
+  { type: 'line', p1: [0, -15], p2: [0, -22] },
+  // Left swept winglet from hull edge
+  { type: 'poly', pts: [[-18, -1], [-21, 4], [-21, 7], [-18, 5]] },
+  // Right swept winglet from hull edge
+  { type: 'poly', pts: [[18, -1], [21, 4], [21, 7], [18, 5]] },
+  // Left landing leg — flares outward from winglet tip
+  { type: 'line', p1: [-21, 7], p2: [-24, 15] },
+  { type: 'line', p1: [-26, 15], p2: [-22, 15] },
+  // Right landing leg — flares outward
+  { type: 'line', p1: [21, 7], p2: [24, 15] },
+  { type: 'line', p1: [22, 15], p2: [26, 15] },
+  // Engine bell
+  { type: 'line', p1: [-4, 9], p2: [-5, 14] },
+  { type: 'line', p1: [4, 9],  p2: [5, 14] },
+  { type: 'line', p1: [-5, 14], p2: [5, 14] },
 ];
 
 function drawLander(x, y, angleDeg, thrustOn, fuel) {
@@ -152,21 +163,30 @@ function drawLander(x, y, angleDeg, thrustOn, fuel) {
       ctx.lineTo(...part.p2);
     } else if (part.type === 'circle') {
       ctx.arc(part.cx, part.cy, part.r, 0, Math.PI * 2);
+    } else if (part.type === 'ellipse') {
+      ctx.ellipse(part.cx, part.cy, part.rx, part.ry, 0, 0, Math.PI * 2);
     }
     ctx.stroke();
   }
+
+  // Pulsating antenna light
+  const pulse = 0.35 + 0.3 * Math.sin(Date.now() / 380);
+  ctx.beginPath();
+  ctx.arc(0, -22, 1.8, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(255, 50, 50, ${pulse})`;
+  ctx.fill();
 
   if (thrustOn && fuel > 0) {
     const flameH = 7 + Math.random() * 9;
     ctx.strokeStyle = `rgba(255, ${120 + (Math.random() * 80) | 0}, 0, 0.9)`;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(-4, 10); ctx.lineTo(0, 10 + flameH); ctx.lineTo(4, 10);
+    ctx.moveTo(-5, 14); ctx.lineTo(0, 14 + flameH); ctx.lineTo(5, 14);
     ctx.stroke();
     ctx.strokeStyle = '#fff8';
     ctx.lineWidth = 0.5;
     ctx.beginPath();
-    ctx.moveTo(-2, 10); ctx.lineTo(0, 10 + flameH * 0.6); ctx.lineTo(2, 10);
+    ctx.moveTo(-3, 14); ctx.lineTo(0, 14 + flameH * 0.6); ctx.lineTo(3, 14);
     ctx.stroke();
   }
 
@@ -498,10 +518,10 @@ function checkLanding() {
   const speed = Math.hypot(vx, vy);
   const rad = (angle * Math.PI) / 180;
 
-  // Feet are at local (±18, 15) — matches scaled LANDER_SHAPE
+  // Feet are at local (±24, 15) — matches LANDER_SHAPE foot pads
   const feet = [
-    localToWorld(-18, 15, x, y, rad),
-    localToWorld( 18, 15, x, y, rad),
+    localToWorld(-24, 15, x, y, rad),
+    localToWorld( 24, 15, x, y, rad),
   ];
 
   for (const foot of feet) {
