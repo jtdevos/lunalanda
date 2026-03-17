@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lunalanda — A: Zoom</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        background: #000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        font-family: 'Courier New', monospace;
+        color: #0f0;
+        overflow: hidden;
+      }
+      canvas { border: 1px solid #0f04; display: block; }
+      #hud {
+        width: 960px;
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 4px;
+        font-size: 13px;
+        letter-spacing: 0.05em;
+        color: #0f0;
+      }
+      .hud-item { display: flex; flex-direction: column; gap: 2px; }
+      .hud-label { font-size: 10px; color: #0f08; text-transform: uppercase; }
+      .hud-value { font-size: 13px; }
+      .hud-value.warn { color: #ff0; }
+      .hud-value.danger { color: #f40; }
+      #overlay {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        pointer-events: none;
+      }
+      #overlay h1 { font-size: 36px; text-shadow: 0 0 20px #0f0; }
+      #overlay p { font-size: 14px; color: #0f08; }
+      #overlay.hidden { display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="hud">
+      <div class="hud-item">
+        <span class="hud-label">Fuel</span>
+        <span class="hud-value" id="hud-fuel">100%</span>
+      </div>
+      <div class="hud-item" style="text-align:center">
+        <span class="hud-label">Velocity</span>
+        <span class="hud-value" id="hud-vel">0.0 m/s</span>
+      </div>
+      <div class="hud-item" style="text-align:center">
+        <span class="hud-label">Altitude</span>
+        <span class="hud-value" id="hud-alt">0 m</span>
+      </div>
+      <div class="hud-item" style="text-align:center">
+        <span class="hud-label">Lives</span>
+        <span class="hud-value" id="hud-lives">♦ ♦ ♦</span>
+      </div>
+      <div class="hud-item" style="text-align:right">
+        <span class="hud-label">Score</span>
+        <span class="hud-value" id="hud-score">0</span>
+      </div>
+    </div>
+    <canvas id="canvas" width="960" height="648"></canvas>
+    <div id="overlay">
+      <h1 id="overlay-title">LUNALANDA — C</h1>
+      <p id="overlay-sub">ARROW KEYS: ROTATE &nbsp;|&nbsp; UP: THRUST &nbsp;|&nbsp; PRESS SPACE TO LAUNCH</p>
+    </div>
+    <script type="module" src="/src/main-c.js"></script>
+  </body>
+</html>

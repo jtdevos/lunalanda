@@ -6,7 +6,9 @@
       "Bash(printf:*)",
       "Bash(mv:*)",
       "Bash(npm install:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(sed:*)",
+      "Bash(for f:*)"
     ]
   }
 }
