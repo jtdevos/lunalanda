@@ -127,6 +127,17 @@ const LANDER_SHAPE = [
   { type: 'line', p1: [-18, -11], p2: [-18, 9] },
   { type: 'line', p1: [18, -11],  p2: [18, 9] },
   { type: 'line', p1: [-18, 9],   p2: [18, 9] },
+  // Portholes
+  { type: 'circle', cx: -7, cy: -2, r: 2 },
+  { type: 'circle', cx:  7, cy: -2, r: 2 },
+  // Panel lines — structural detail near hull top
+  { type: 'line', p1: [-17, -7], p2: [-11, -7] },
+  { type: 'line', p1: [ 11, -7], p2: [ 17, -7] },
+  // Small side beacons / sensors
+  { type: 'circle', cx: -14, cy: -4, r: 1.2 },
+  { type: 'circle', cx:  14, cy: -4, r: 1.2 },
+  // Equipment bay — lower hull center
+  { type: 'poly', pts: [[-3, 4], [3, 4], [3, 8], [-3, 8]] },
   // Porkpie brim — wider than hull
   { type: 'line', p1: [-22, -11], p2: [22, -11] },
   // Hat crown — narrower rectangle on top of brim
