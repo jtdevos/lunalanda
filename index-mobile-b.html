@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#000000" />
+    <title>Lunalanda — B: Zones</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html, body { background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; color: #0f0; }
+      #game-container { position: fixed; width: 960px; display: flex; flex-direction: column; align-items: center; will-change: transform; }
+      canvas { display: block; border: 1px solid #0f04; }
+      #canvas-wrap { position: relative; width: 960px; height: 648px; }
+      #hud { width: 960px; display: flex; justify-content: space-between; padding: 6px 4px; font-size: 13px; letter-spacing: 0.05em; }
+      .hud-item { display: flex; flex-direction: column; gap: 2px; }
+      .hud-label { font-size: 10px; color: #0f08; text-transform: uppercase; }
+      .hud-value { font-size: 13px; }
+      .hud-value.warn { color: #ff0; }
+      .hud-value.danger { color: #f40; }
+      #overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; pointer-events: none; z-index: 2; }
+      #overlay h1 { font-size: 36px; text-shadow: 0 0 20px #0f0; }
+      #overlay p { font-size: 14px; color: #0f08; }
+      #overlay.hidden { display: none; }
+      /* ── Zone guide ── */
+      #zone-guide {
+        position: absolute; inset: 0;
+        display: flex;
+        pointer-events: none;
+        z-index: 1;
+      }
+      .zone {
+        display: flex; align-items: flex-end; justify-content: center;
+        padding-bottom: 24px;
+        font-size: 32px;
+        color: #0f0;
+        opacity: 0.13;
+      }
+      .zone-l { width: 28%; border-right: 1px solid #0f02; }
+      .zone-c { width: 44%; }
+      .zone-r { width: 28%; border-left: 1px solid #0f02; }
+    </style>
+  </head>
+  <body>
+    <div id="game-container">
+      <div id="hud">
+        <div class="hud-item">
+          <span class="hud-label">Fuel</span>
+          <span class="hud-value" id="hud-fuel">100%</span>
+        </div>
+        <div class="hud-item" style="text-align:center">
+          <span class="hud-label">Velocity</span>
+          <span class="hud-value" id="hud-vel">0.0 m/s</span>
+        </div>
+        <div class="hud-item" style="text-align:center">
+          <span class="hud-label">Altitude</span>
+          <span class="hud-value" id="hud-alt">0 m</span>
+        </div>
+        <div class="hud-item" style="text-align:center">
+          <span class="hud-label">Lives</span>
+          <span class="hud-value" id="hud-lives">♦ ♦ ♦</span>
+        </div>
+        <div class="hud-item" style="text-align:right">
+          <span class="hud-label">Score</span>
+          <span class="hud-value" id="hud-score">0</span>
+        </div>
+      </div>
+      <div id="canvas-wrap">
+        <canvas id="canvas" width="960" height="648"></canvas>
+        <div id="zone-guide" aria-hidden="true">
+          <div class="zone zone-l">◄</div>
+          <div class="zone zone-c">▲</div>
+          <div class="zone zone-r">►</div>
+        </div>
+        <div id="overlay">
+          <h1 id="overlay-title">LUNALANDA</h1>
+          <p id="overlay-sub">LEFT &nbsp;·&nbsp; CENTER &nbsp;·&nbsp; RIGHT &nbsp;|&nbsp; TAP TO LAUNCH</p>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/mobile-b.js"></script>
+  </body>
+</html>
