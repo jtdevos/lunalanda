@@ -123,12 +123,16 @@ function terrainYAt(x) {
 // ── Lander drawing — USS Palomino-inspired ────────────────────
 // Feet tips are at local (±24, 15) — used in checkLanding too
 const LANDER_SHAPE = [
-  // Cylindrical hull body
-  { type: 'poly', pts: [[-18, -11], [18, -11], [18, 9], [-18, 9]] },
-  // Top elliptical cap (sells the cylinder)
-  { type: 'ellipse', cx: 0, cy: -11, rx: 18, ry: 4 },
-  // Antenna — short, straight, from hull top
-  { type: 'line', p1: [0, -15], p2: [0, -22] },
+  // Hull — three sides, brim serves as the top edge
+  { type: 'line', p1: [-18, -11], p2: [-18, 9] },
+  { type: 'line', p1: [18, -11],  p2: [18, 9] },
+  { type: 'line', p1: [-18, 9],   p2: [18, 9] },
+  // Porkpie brim — wider than hull
+  { type: 'line', p1: [-22, -11], p2: [22, -11] },
+  // Hat crown — narrower rectangle on top of brim
+  { type: 'poly', pts: [[-13, -11], [13, -11], [13, -19], [-13, -19]] },
+  // Antenna from crown top center
+  { type: 'line', p1: [0, -19], p2: [0, -25] },
   // Left swept winglet from hull edge
   { type: 'poly', pts: [[-18, -1], [-21, 4], [-21, 7], [-18, 5]] },
   // Right swept winglet from hull edge
@@ -172,7 +176,7 @@ function drawLander(x, y, angleDeg, thrustOn, fuel) {
   // Pulsating antenna light
   const pulse = 0.35 + 0.3 * Math.sin(Date.now() / 380);
   ctx.beginPath();
-  ctx.arc(0, -22, 1.8, 0, Math.PI * 2);
+  ctx.arc(0, -25, 1.8, 0, Math.PI * 2);
   ctx.fillStyle = `rgba(255, 50, 50, ${pulse})`;
   ctx.fill();
 
