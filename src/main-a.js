@@ -28,6 +28,7 @@ let lives = 3;
 
 let lander, terrain;
 let keys = {};
+let wasThrusting = false;
 
 // ── Camera ───────────────────────────────────────────────────
 let camY = H / 2;
@@ -368,6 +369,72 @@ function updateHUD() {
   hudScore.textContent = score;
 }
 
+// ── Audio ─────────────────────────────────────────────────────
+let audioCtx = null;
+let thrusterSrc = null;
+let thrusterGain = null;
+
+function getAudio() {
+  if (!audioCtx) audioCtx = new AudioContext();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function startThruster() {
+  if (thrusterSrc) return;
+  const ac = getAudio();
+  const buf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  thrusterSrc = ac.createBufferSource();
+  thrusterSrc.buffer = buf;
+  thrusterSrc.loop = true;
+  const filter = ac.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 140;
+  filter.Q.value = 0.7;
+  thrusterGain = ac.createGain();
+  thrusterGain.gain.setValueAtTime(0, ac.currentTime);
+  thrusterGain.gain.linearRampToValueAtTime(0.18, ac.currentTime + 0.08);
+  thrusterSrc.connect(filter);
+  filter.connect(thrusterGain);
+  thrusterGain.connect(ac.destination);
+  thrusterSrc.start();
+}
+
+function stopThruster() {
+  if (!thrusterSrc) return;
+  const ac = getAudio();
+  const g = thrusterGain, s = thrusterSrc;
+  thrusterSrc = null;
+  thrusterGain = null;
+  g.gain.setValueAtTime(g.gain.value, ac.currentTime);
+  g.gain.linearRampToValueAtTime(0, ac.currentTime + 0.12);
+  s.stop(ac.currentTime + 0.12);
+}
+
+function playExplosion() {
+  const ac = getAudio();
+  const dur = 1.8;
+  const buf = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  const filter = ac.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(600, ac.currentTime);
+  filter.frequency.exponentialRampToValueAtTime(80, ac.currentTime + dur);
+  const gain = ac.createGain();
+  gain.gain.setValueAtTime(0.7, ac.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
+  src.connect(filter);
+  filter.connect(gain);
+  gain.connect(ac.destination);
+  src.start();
+  src.stop(ac.currentTime + dur);
+}
+
 // ── Collision ────────────────────────────────────────────────
 function localToWorld(lx, ly, cx, cy, rad) {
   return {
@@ -407,6 +474,7 @@ function checkLanding() {
 
 function win(speed) {
   state = 'won';
+  stopThruster();
   const pts = Math.round((MAX_SAFE_SPEED - speed) / MAX_SAFE_SPEED * 500 + lander.fuel * 3);
   score += pts;
   overlayTitle.textContent = `LANDED! +${pts} PTS`;
@@ -418,6 +486,8 @@ function win(speed) {
 
 function crash() {
   state = 'dead';
+  stopThruster();
+  playExplosion();
   spawnExplosion(lander.x, lander.y);
   lives -= 1;
   if (lives <= 0) {
@@ -464,6 +534,7 @@ function spawnLander() {
 function startNewGame() {
   score = 0;
   lives = 3;
+  wasThrusting = false;
   terrain = generateTerrain();
   spawnLander();
   camY = lander.y + H * 0.15;
@@ -475,6 +546,7 @@ function startNewGame() {
 
 function respawn() {
   // same terrain, new lander
+  wasThrusting = false;
   spawnLander();
   camY = lander.y + H * 0.15;
   particles = [];
@@ -484,6 +556,7 @@ function respawn() {
 }
 
 function nextRound() {
+  wasThrusting = false;
   terrain = generateTerrain();
   spawnLander();
   camY = lander.y + H * 0.15;
@@ -505,6 +578,9 @@ function update(dt) {
 
   const thrusting = keys['ArrowUp'] && lander.fuel > 0;
   lander.thrustOn = thrusting;
+  if (thrusting && !wasThrusting) startThruster();
+  else if (!thrusting && wasThrusting) stopThruster();
+  wasThrusting = thrusting;
   if (thrusting) {
     const rad = (lander.angle * Math.PI) / 180;
     lander.vx += Math.sin(rad) * THRUST_POWER * dt;
