@@ -742,3 +742,5 @@ overlay.classList.remove('hidden');
 hudScore.textContent = score;
 hudLives.textContent = '♦ ♦ ♦';
 loop();
+
+export { keys };
