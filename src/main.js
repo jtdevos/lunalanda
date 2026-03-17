@@ -121,42 +121,42 @@ function terrainYAt(x) {
 }
 
 // ── Lander drawing — USS Palomino-inspired ────────────────────
-// Feet tips are at local (±24, 15) — used in checkLanding too
+// Feet tips are at local (±22, 16) — used in checkLanding too
 const LANDER_SHAPE = [
   // Hull — three sides, brim serves as the top edge
-  { type: 'line', p1: [-18, -11], p2: [-18, 9] },
-  { type: 'line', p1: [18, -11],  p2: [18, 9] },
-  { type: 'line', p1: [-18, 9],   p2: [18, 9] },
+  { type: 'line', p1: [-16, -11], p2: [-16, 8] },
+  { type: 'line', p1: [16, -11],  p2: [16, 8] },
+  { type: 'line', p1: [-16, 8],   p2: [16, 8] },
   // Portholes
   { type: 'circle', cx: -7, cy: -2, r: 2 },
   { type: 'circle', cx:  7, cy: -2, r: 2 },
   // Panel lines — structural detail near hull top
-  { type: 'line', p1: [-17, -7], p2: [-11, -7] },
-  { type: 'line', p1: [ 11, -7], p2: [ 17, -7] },
+  { type: 'line', p1: [-15, -7], p2: [-10, -7] },
+  { type: 'line', p1: [ 10, -7], p2: [ 15, -7] },
   // Small side beacons / sensors
-  { type: 'circle', cx: -14, cy: -4, r: 1.2 },
-  { type: 'circle', cx:  14, cy: -4, r: 1.2 },
+  { type: 'circle', cx: -12, cy: -4, r: 1.2 },
+  { type: 'circle', cx:  12, cy: -4, r: 1.2 },
   // Equipment bay — lower hull center
-  { type: 'poly', pts: [[-3, 4], [3, 4], [3, 8], [-3, 8]] },
+  { type: 'poly', pts: [[-3, 4], [3, 4], [3, 7], [-3, 7]] },
   // Porkpie brim — wider than hull
   { type: 'line', p1: [-22, -11], p2: [22, -11] },
   // Hat crown — narrower rectangle on top of brim
-  { type: 'poly', pts: [[-13, -11], [13, -11], [13, -19], [-13, -19]] },
+  { type: 'poly', pts: [[-12, -11], [12, -11], [12, -19], [-12, -19]] },
   // Antenna from crown top center
   { type: 'line', p1: [0, -19], p2: [0, -25] },
   // Left swept winglet from hull edge
-  { type: 'poly', pts: [[-18, -1], [-21, 4], [-21, 7], [-18, 5]] },
+  { type: 'poly', pts: [[-16, -1], [-19, 4], [-19, 7], [-16, 5]] },
   // Right swept winglet from hull edge
-  { type: 'poly', pts: [[18, -1], [21, 4], [21, 7], [18, 5]] },
-  // Left landing leg — flares outward from winglet tip
-  { type: 'line', p1: [-21, 7], p2: [-24, 15] },
-  { type: 'line', p1: [-26, 15], p2: [-22, 15] },
-  // Right landing leg — flares outward
-  { type: 'line', p1: [21, 7], p2: [24, 15] },
-  { type: 'line', p1: [22, 15], p2: [26, 15] },
+  { type: 'poly', pts: [[16, -1], [19, 4], [19, 7], [16, 5]] },
+  // Left landing leg — flares outward (+15% longer)
+  { type: 'line', p1: [-19, 7], p2: [-22, 16] },
+  { type: 'line', p1: [-24, 16], p2: [-20, 16] },
+  // Right landing leg — flares outward (+15% longer)
+  { type: 'line', p1: [19, 7], p2: [22, 16] },
+  { type: 'line', p1: [20, 16], p2: [24, 16] },
   // Engine bell
-  { type: 'line', p1: [-4, 9], p2: [-5, 14] },
-  { type: 'line', p1: [4, 9],  p2: [5, 14] },
+  { type: 'line', p1: [-4, 8], p2: [-5, 14] },
+  { type: 'line', p1: [4, 8],  p2: [5, 14] },
   { type: 'line', p1: [-5, 14], p2: [5, 14] },
 ];
 
@@ -533,10 +533,10 @@ function checkLanding() {
   const speed = Math.hypot(vx, vy);
   const rad = (angle * Math.PI) / 180;
 
-  // Feet are at local (±24, 15) — matches LANDER_SHAPE foot pads
+  // Feet are at local (±22, 16) — matches LANDER_SHAPE foot pads
   const feet = [
-    localToWorld(-24, 15, x, y, rad),
-    localToWorld( 24, 15, x, y, rad),
+    localToWorld(-22, 16, x, y, rad),
+    localToWorld( 22, 16, x, y, rad),
   ];
 
   for (const foot of feet) {
