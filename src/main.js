@@ -191,21 +191,23 @@ function drawLander(x, y, angleDeg, thrustOn, fuel) {
   ctx.fillStyle = `rgba(255, 50, 50, ${pulse})`;
   ctx.fill();
 
-  if (thrustOn && fuel > 0) {
-    const flameH = 7 + Math.random() * 9;
-    ctx.strokeStyle = `rgba(255, ${120 + (Math.random() * 80) | 0}, 0, 0.9)`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(-5, 14); ctx.lineTo(0, 14 + flameH); ctx.lineTo(5, 14);
-    ctx.stroke();
-    ctx.strokeStyle = '#fff8';
-    ctx.lineWidth = 0.5;
-    ctx.beginPath();
-    ctx.moveTo(-3, 14); ctx.lineTo(0, 14 + flameH * 0.6); ctx.lineTo(3, 14);
-    ctx.stroke();
-  }
+  if (thrustOn && fuel > 0) drawThrusters();
 
   ctx.restore();
+}
+
+function drawThrusters() {
+  const flameH = 7 + Math.random() * 9;
+  ctx.strokeStyle = `rgba(255, ${120 + (Math.random() * 80) | 0}, 0, 0.9)`;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-5, 14); ctx.lineTo(0, 14 + flameH); ctx.lineTo(5, 14);
+  ctx.stroke();
+  ctx.strokeStyle = '#fff8';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(-3, 14); ctx.lineTo(0, 14 + flameH * 0.6); ctx.lineTo(3, 14);
+  ctx.stroke();
 }
 
 // ── Terrain drawing ──────────────────────────────────────────
@@ -296,6 +298,29 @@ function drawGrid() {
 
 // ── Particles ────────────────────────────────────────────────
 let particles = [];
+
+function spawnThrustParticles(rad, dt) {
+  // Nozzle tip in world space: local (0, 14) rotated
+  const nx = lander.x - Math.sin(rad) * 14;
+  const ny = lander.y + Math.cos(rad) * 14;
+  const count = Math.random() < 0.5 ? 1 : 2;
+  for (let i = 0; i < count; i++) {
+    const spread = (Math.random() - 0.5) * 0.7; // cone width
+    const speed  = 2.5 + Math.random() * 3;
+    const r = Math.random();
+    const color = r < 0.5 ? '#fa0' : r < 0.8 ? '#ff0' : '#fff';
+    particles.push({
+      type: 'thrustdot',
+      x: nx, y: ny,
+      // exhaust exits opposite to thrust direction, plus lander velocity inheritance
+      vx: lander.vx - Math.sin(rad + spread) * speed,
+      vy: lander.vy + Math.cos(rad + spread) * speed,
+      life: 1.5,
+      decay: 0.065 + Math.random() * 0.03,  // ~0.25s lifetime
+      color,
+    });
+  }
+}
 
 function spawnExplosion(cx, cy) {
   // Sparks — fast thin streaks
@@ -416,8 +441,20 @@ function updateParticles(dt) {
       ctx.fillStyle = p.color === '#fff'
         ? `rgba(255,255,255,${a})`
         : p.color === '#ff0'
-          ? `rgba(255,180,0,${a})`
-          : `rgba(0,255,0,${a})`;
+          ? `rgba(255,220,0,${a})`
+          : p.color === '#fa0'
+            ? `rgba(255,160,0,${a})`
+            : `rgba(0,255,0,${a})`;
+      ctx.fill();
+    } else if (p.type === 'thrustdot') {
+      // Fixed 1px dot — radius stays constant, only alpha fades
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 0.5, 0, Math.PI * 2);
+      ctx.fillStyle = p.color === '#fff'
+        ? `rgba(255,255,255,${a})`
+        : p.color === '#ff0'
+          ? `rgba(255,220,0,${a})`
+          : `rgba(255,160,0,${a})`; // #fa0 orange
       ctx.fill();
     }
   }
@@ -668,6 +705,7 @@ function update(dt) {
     lander.vx += Math.sin(rad) * THRUST_POWER * dt;
     lander.vy -= Math.cos(rad) * THRUST_POWER * dt;
     lander.fuel = Math.max(0, lander.fuel - FUEL_BURN_RATE * dt);
+    spawnThrustParticles(rad, dt);
   }
 
   lander.vy += GRAVITY * dt;
@@ -710,7 +748,7 @@ function draw(dt) {
     const blinkOn = spawnProtect <= 0 || Math.floor(spawnProtect / 6) % 2 === 0;
     if (blinkOn) drawLander(lander.x, lander.y, lander.angle, lander.thrustOn, lander.fuel);
   }
-  if (state === 'dead') updateParticles(dt);
+  if (state === 'playing' || state === 'dead') updateParticles(dt);
   if (state === 'won' && lander) drawLander(lander.x, lander.y, lander.angle, false, lander.fuel);
 
   ctx.restore();

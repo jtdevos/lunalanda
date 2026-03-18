@@ -20,7 +20,7 @@
       }
       canvas { border: 1px solid #0f04; display: block; }
       #hud {
-        width: 960px;
+        width: 100%;
         display: flex;
         justify-content: space-between;
         padding: 6px 4px;
@@ -70,11 +70,12 @@
         <span class="hud-value" id="hud-score">0</span>
       </div>
     </div>
-    <canvas id="canvas" width="960" height="648"></canvas>
+    <canvas id="canvas"></canvas>
     <div id="overlay">
       <h1 id="overlay-title">LUNALANDA</h1>
       <p id="overlay-sub">ARROW KEYS: ROTATE &nbsp;|&nbsp; UP: THRUST &nbsp;|&nbsp; PRESS SPACE TO LAUNCH</p>
     </div>
     <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/desktop.js"></script>
   </body>
 </html>
