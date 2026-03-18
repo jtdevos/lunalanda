@@ -87,17 +87,18 @@ function generateTerrain() {
   const worldLeft = -margin;
   const worldRight = W + margin;
   const worldW = worldRight - worldLeft;
-  const segments = 28;
+  const segments = Math.max(14, Math.round(28 * W / 960));
   const segW = worldW / segments;
-  // Pad is 2 segments wide; keep it in the central zone (segments 8–18)
-  const padSeg = 8 + Math.floor(Math.random() * 10);
+  // Pad width targets ~150px regardless of canvas width
+  const padSegs = Math.max(3, Math.round(150 / segW));
+  const padSeg = Math.floor(segments * 0.28) + Math.floor(Math.random() * Math.floor(segments * 0.36));
   const padY = Math.round(H * 0.58 + Math.random() * (H * 0.18));
 
   const points = [];
   let y = H * 0.37 + Math.random() * (H * 0.28);
   for (let i = 0; i <= segments; i++) {
     const x = worldLeft + i * segW;
-    if (i === padSeg || i === padSeg + 1 || i === padSeg + 2) {
+    if (i >= padSeg && i <= padSeg + padSegs) {
       points.push({ x, y: padY });
     } else {
       if (i > 0) y += (Math.random() - 0.5) * 90;
@@ -107,7 +108,7 @@ function generateTerrain() {
   }
 
   const minTerrainY = Math.min(...points.map(p => p.y));
-  return { points, segW, padSeg, padY, minTerrainY };
+  return { points, segW, padSeg, padSegs, padY, minTerrainY };
 }
 
 function terrainYAt(x) {
@@ -212,7 +213,7 @@ function drawThrusters() {
 
 // ── Terrain drawing ──────────────────────────────────────────
 function drawTerrain() {
-  const { points, padSeg } = terrain;
+  const { points, padSeg, padSegs } = terrain;
 
   ctx.beginPath();
   ctx.moveTo(points[0].x, points[0].y);
@@ -228,10 +229,8 @@ function drawTerrain() {
   ctx.strokeStyle = '#0a0';
   ctx.lineWidth = 1.5;
   ctx.stroke();
-
-  // Landing pad (2 segments wide)
   const p0 = points[padSeg];
-  const p1 = points[padSeg + 2];
+  const p1 = points[padSeg + padSegs];
   ctx.beginPath();
   ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y);
   ctx.strokeStyle = '#0ff';
@@ -566,8 +565,8 @@ function checkLanding() {
 
   for (const foot of feet) {
     if (foot.y >= terrainYAt(foot.x) - 1) {
-      const { points, padSeg } = terrain;
-      const p0 = points[padSeg], p1 = points[padSeg + 2]; // 2-segment pad
+      const { points, padSeg, padSegs } = terrain;
+      const p0 = points[padSeg], p1 = points[padSeg + padSegs];
       const bothOnPad = feet.every(f => f.x >= p0.x && f.x <= p1.x);
       const norm = ((angle % 360) + 360) % 360;
       const upright = norm <= MAX_SAFE_ANGLE || norm >= 360 - MAX_SAFE_ANGLE;
