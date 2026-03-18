@@ -1,7 +1,7 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const W = canvas.width;
-const H = canvas.height;
+let W = canvas.width;
+let H = canvas.height;
 
 const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
@@ -253,29 +253,17 @@ function drawTerrain() {
 }
 
 // ── Stars — THREE parallax layers ────────────────────────────
-// Layer 1: deep background, barely moves
-const STARS_L1 = Array.from({ length: 100 }, () => ({
-  x: Math.random() * W,
-  y: -100 + Math.random() * (H + 200),
-  r: 0.3 + Math.random() * 0.6,
-  b: 0.15 + Math.random() * 0.4,
-}));
-
-// Layer 2: mid distance
-const STARS_L2 = Array.from({ length: 60 }, () => ({
-  x: Math.random() * W,
-  y: -100 + Math.random() * (H + 200),
-  r: 0.6 + Math.random() * 1.0,
-  b: 0.3 + Math.random() * 0.5,
-}));
-
-// Layer 3: near background, moves most, also subtly scales with zoom
-const STARS_L3 = Array.from({ length: 30 }, () => ({
-  x: Math.random() * W,
-  y: -100 + Math.random() * (H + 200),
-  r: 1.0 + Math.random() * 1.5,
-  b: 0.5 + Math.random() * 0.5,
-}));
+function makeLayer(count, rMin, rRange, bMin, bRange) {
+  return Array.from({ length: count }, () => ({
+    x: Math.random() * W,
+    y: -100 + Math.random() * (H + 200),
+    r: rMin + Math.random() * rRange,
+    b: bMin + Math.random() * bRange,
+  }));
+}
+let STARS_L1 = makeLayer(100, 0.3, 0.6, 0.15, 0.4);
+let STARS_L2 = makeLayer( 60, 0.6, 1.0, 0.30, 0.5);
+let STARS_L3 = makeLayer( 30, 1.0, 1.5, 0.50, 0.5);
 
 function drawStars() {
   const offset1 = (H / 2 - cam.y) * 0.03;
@@ -742,5 +730,16 @@ overlay.classList.remove('hidden');
 hudScore.textContent = score;
 hudLives.textContent = '♦ ♦ ♦';
 loop();
+
+export function setCanvasSize(w, h) {
+  canvas.width = w; canvas.height = h;
+  W = w; H = h;
+  STARS_L1 = makeLayer(100, 0.3, 0.6, 0.15, 0.4);
+  STARS_L2 = makeLayer( 60, 0.6, 1.0, 0.30, 0.5);
+  STARS_L3 = makeLayer( 30, 1.0, 1.5, 0.50, 0.5);
+  if (terrain) terrain = generateTerrain();
+  cam.y = H / 2; cam.vy = 0;
+  zoom = 1.0; zoomVel = 0;
+}
 
 export { keys };

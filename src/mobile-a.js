@@ -1,21 +1,23 @@
-import { keys } from './main.js';
+import { keys, setCanvasSize } from './main.js';
 
-// ── Fit game container to viewport ───────────────────────────────
-// Natural height: HUD(40) + canvas(648) + controls(140) = 828
-const GAME_W = 960, GAME_H = 828;
-const container = document.getElementById('game-container');
+// ── Fit canvas to available screen space ─────────────────────
+const HUD_H  = 44;   // must match #hud height in mobile.html
+const CTRL_H = 80;   // must match #controls height in mobile.html
+const canvas = document.getElementById('canvas');
 
 function fit() {
-  const scale = Math.min(window.innerWidth / GAME_W, window.innerHeight / GAME_H);
-  container.style.transformOrigin = 'top left';
-  container.style.transform = `scale(${scale})`;
-  container.style.left = ((window.innerWidth  - GAME_W * scale) / 2) + 'px';
-  container.style.top  = ((window.innerHeight - GAME_H * scale) / 2) + 'px';
+  const w = window.innerWidth;
+  const h = window.innerHeight - HUD_H - CTRL_H;
+  setCanvasSize(w, h);
+  canvas.style.width  = w + 'px';
+  canvas.style.height = h + 'px';
 }
+
 window.addEventListener('resize', fit);
+window.addEventListener('orientationchange', () => setTimeout(fit, 150));
 requestAnimationFrame(fit);
 
-// ── Button → key binding ─────────────────────────────────────────
+// ── Button → key binding ─────────────────────────────────────
 function bindBtn(id, key) {
   const btn = document.getElementById(id);
   const on  = e => { e.preventDefault(); keys[key] = true; };
@@ -32,7 +34,7 @@ bindBtn('btn-left',   'ArrowLeft');
 bindBtn('btn-thrust', 'ArrowUp');
 bindBtn('btn-right',  'ArrowRight');
 
-// ── Tap canvas to advance game state (simulates Space) ───────────
+// ── Tap canvas to advance game state (simulates Space) ───────
 document.getElementById('canvas-wrap').addEventListener('touchstart', e => {
   e.preventDefault();
   if (!document.getElementById('overlay').classList.contains('hidden')) {
